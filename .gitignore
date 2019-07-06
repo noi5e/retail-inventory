@@ -1,7 +1,8 @@
 .DS_Store
+.env
+client/dist/js/bundle.js
 data
 node_modules
-client/dist/js/bundle.js
-.env
 npm-debug.log
 package-lock.json
+screenshots
