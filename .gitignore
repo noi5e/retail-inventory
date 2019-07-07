@@ -1,6 +1,7 @@
 .DS_Store
 .env
 client/dist/js/bundle.js
+csv
 data
 node_modules
 npm-debug.log
