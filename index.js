@@ -40,17 +40,19 @@ async function loginToAdminAccount() {
   console.log('Streaming CSV into parser...')
   let completedRetailProducts = await fullyParsedStream
 
-  let wednesdayPerishables = completedRetailProducts.filter((product) => product['Weekly Recurring Order'])
+  let wednesdayPerishables = completedRetailProducts.filter((product) => {
+    return product['Weekly Recurring Order'] === "TRUE";
+  })
+
   console.log(wednesdayPerishables)
 
-    //   wednesdayPerishables.forEach((product) => {
-    //     // console.log(product['Exact Name: NOP'])
+  // console.log('Iterating through Wednesday perishables')
+  // wednesdayPerishables.forEach((product) => {
+  //   console.log(product['Exact Name: NOP'])
 
+  // })
 
-    //   })
-    // })
-
-  await page.screenshot({ path: './screenshots/' + new Date().getTime() + '.png' })
+  // await page.screenshot({ path: './screenshots/' + new Date().getTime() + '.png' })
   browser.close()
 }
 
