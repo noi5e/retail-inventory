@@ -49,20 +49,14 @@ async function loginToAdminAccount() {
 
   // helper function to escape product names that have single quotes in their names:
   const escapeXPathString = (string) => {
-    if (string.indexOf('.')) {
-      const splitPeriod = string.split('.')
-      return `'${splitPeriod[0]}'`
-    }
-
     const splitQuotes = string.replace(/'/g, `', "'", '`)
     return `concat('${splitQuotes}', '')`
   }
 
   for (let i = 0; i < retailProductIDList.length; i++) {
-    // console.log(retailProductIDList[i].name)
     try {
-      // console.log(escapeXPathString(retailProductIDList[i].name) + ' ' + retailProductIDList[i].name)
-      const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(retailProductIDList[i].name)})]]`)
+      // const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(retailProductIDList[i].name)})]]`)
+      const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(retailProductIDList[i].name)}]`)
       retailProductIDList[i].elementHandle = elementHandles[1]
       let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])  
       retailProductIDList[i].dataUID = dataUID
@@ -71,20 +65,53 @@ async function loginToAdminAccount() {
     }
   }
 
-  // EXTRA SPACES IN CSV VALUES ARE THE CULPRIT!!!!!
+  const retrieveIDfromString = (string) => {
+    return parseInt(string.match(/\d+/)[0])
+  }
 
   for (let i = 0; i < retailProductIDList.length; i++) {
 
     try {
       let otherElementHandles = await page.$x(`//tr[@data-uid="${retailProductIDList[i].dataUID}"]`)
-      let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map(node => node.innerText))
-      retailProductIDList[i].id = parseInt(innerText[10])
+      let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
+
+      if (!innerText[10]) {
+        let innerText = await otherElementHandles[1].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
+
+        retailProductIDList[i].id = retrieveIDfromString(innerText[7])
+
+        console.log(retailProductIDList[i].name)
+      } else {
+        retailProductIDList[i].id = retrieveIDfromString(innerText[10]
+        )      }
     } catch(error) {
       console.error('Error with this product: ' + retailProductIDList[i].name)
     }
   }
 
-  console.log(retailProductIDList)
+  let ids = []
+
+  // these products get overwritten:
+  // Book: Full Moon Feast
+  // By Nieves "C" Perfect Skin Large 8 oz refill
+  // By Nieves Face Fix Travel Size
+  // Miss Bee Haven Beeswax Wrap with Button
+  // Rosita Extra-Virgin Cod Liver Oil Capsules
+  // Yume Boshi Umeboshi Salty Pickles 4.5 oz
+
+  for (let i = 0; i < retailProductIDList.length; i++) {
+    // if (!retailProductIDList[i].id) {
+    //   console.log(retailProductIDList[i].name + ': ' + retailProductIDList[i].id)
+    // }
+
+    if (ids.indexOf(retailProductIDList[i].id) > -1) {
+      console.log(retailProductIDList[i].name)
+    }
+
+    ids.push(retailProductIDList[i].id)
+
+    console.log(retailProductIDList[i].name + ': ' + retailProductIDList[i].id)
+  }
 
 
 
