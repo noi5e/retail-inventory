@@ -38,23 +38,32 @@ async function loginToAdminAccount() {
 
   let completedRetailProducts = await fullyParsedStream
 
+  // iterates over CSV of retail products, to filter out only Wednesday perishables:
   let wednesdayPerishables = completedRetailProducts.filter((product) => {
     return product['Weekly Recurring Order'] === "TRUE";
   }).map((product) => {
     return { name: product['Exact Name: NOP'] }
   })
 
+  // helper function to escape product names that have single quotes in their names:
   const escapeXPathString = (string) => {
     const splitQuotes = string.replace(/'/g, `', "'", '`)
     return `concat('${splitQuotes}', '')`
   }
 
+  // iterates over the names of Wednesday perishables, finds the <tr> tags that contain them via XPath, and saves the element handles:
   for (let i = 0; i < wednesdayPerishables.length; i++) {
     const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(wednesdayPerishables[i].name)})]]`)
-    wednesdayPerishables[i].elementHandle = elementHandles[1]
+    // wednesdayPerishables[i].elementHandle = elementHandles[1]
+
+    let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])
+    wednesdayPerishables[i].dataUID = dataUID
   }
 
+
   console.log(wednesdayPerishables)
+
+  //  FORMAT OF EACH PRODUCT <tr>: 
 
   //  <tr class="k-alt" data-uid="someString" role="row">
   //    <td style="vertical-align:top" role="gridcell">Recurring</td>
@@ -70,22 +79,27 @@ async function loginToAdminAccount() {
   //    <td><a>View Product</a></td>
   //  </tr>
 
-  async function getDataUID(elementHandle) {
-    return await page.evaluate(element => element.getAttribute('data-uid'))
-  }
+  // async function getDataUID(product) {
+  //   return await page.evaluate((product) => {
+  //     product.dataUID = product.elementHandle.getAttribute('data-uid')
+  //   }, product)
+  // }
 
-  async function getIDforArray(array) {
-    const promises = array.map(getDataUID)
-  }
+  // async function getIDforArray(array) {
+  //   const promises = array.map(getDataUID)
+  // }
+
+  // const promises = wednesdayPerishables.map(getDataUID)
+  // await Promise.all(promises)
 
   // const elementHandles = await page.$x(`//tr[td[contains(text(), 'Beber Chocolate Almond Milk')]]`)
   const elementHandles = await page.$x(`//tr[td[contains(text(), '${wednesdayPerishables[0].name}')]]`)
   const roleHandle = await elementHandles[1].getProperty('outerHTML')
   const roleJSON = await roleHandle.jsonValue()
-  console.log(roleJSON)
+  // console.log(roleJSON)
 
   let role = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])
-  console.log(role)
+  // console.log(role)
 
   // await page.screenshot({ path: './screenshots/' + new Date().getTime() + '.png' })
   browser.close()
