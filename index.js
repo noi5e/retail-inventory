@@ -54,30 +54,43 @@ async function loginToAdminAccount() {
   // iterates over the names of Wednesday perishables, finds the <tr> tags that contain them via XPath, and saves the element handles:
   for (let i = 0; i < wednesdayPerishables.length; i++) {
     const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(wednesdayPerishables[i].name)})]]`)
-    // wednesdayPerishables[i].elementHandle = elementHandles[1]
+    wednesdayPerishables[i].elementHandle = elementHandles[1]
 
     let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])
     wednesdayPerishables[i].dataUID = dataUID
   }
 
-
-  console.log(wednesdayPerishables)
-
   //  FORMAT OF EACH PRODUCT <tr>: 
 
   //  <tr class="k-alt" data-uid="someString" role="row">
-  //    <td style="vertical-align:top" role="gridcell">Recurring</td>
-  //    <td>Beber Chocolate Almond Milk</td>
-  //    <td><img src="published-checkmark.gif" /></td>
   //    <td>$Price</td>
   //    <td>Blank Cell</td>
   //    <td>Inventory #</td>
-  //    <td><img src="another-checkmark.gif" /></td>
+  //    <td><img src="mystery-checkmark.gif" /></td>
   //    <td>To Sell #</td>
   //    <td><a>Sold</a></td>
-  //    <td>Remaining To Cell</td>
+  //    <td>Remaining To Sell</td>
   //    <td><a>View Product</a></td>
   //  </tr>
+
+  // iterates over element handles, and finds the corresponding, separate <tr> that has the sales numbers:
+  for (let i = 0; i < wednesdayPerishables.length; i++) {
+    console.log(wednesdayPerishables[i].name + ': ' + wednesdayPerishables[i].dataUID)
+
+    let otherElementHandles = await page.$x(`//tr[@data-uid="${wednesdayPerishables[i].dataUID}"]`)
+    console.log(otherElementHandles.length)
+
+    // let inventoryNumberHandle = await otherElementHandles[0].$x(`/td`)
+
+    let innerText = await otherElementHandles[0].getProperty('innerText')
+    let innerJSON = await innerText.jsonValue()
+    console.log(innerText)
+
+
+    // console.log(inventoryNumber)
+
+    // let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), otherElementHandles[1])
+  }
 
   // async function getDataUID(product) {
   //   return await page.evaluate((product) => {
@@ -92,7 +105,6 @@ async function loginToAdminAccount() {
   // const promises = wednesdayPerishables.map(getDataUID)
   // await Promise.all(promises)
 
-  // const elementHandles = await page.$x(`//tr[td[contains(text(), 'Beber Chocolate Almond Milk')]]`)
   const elementHandles = await page.$x(`//tr[td[contains(text(), '${wednesdayPerishables[0].name}')]]`)
   const roleHandle = await elementHandles[1].getProperty('outerHTML')
   const roleJSON = await roleHandle.jsonValue()
