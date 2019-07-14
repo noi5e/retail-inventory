@@ -44,11 +44,14 @@ async function loginToAdminAccount() {
     return { name: product['Exact Name: NOP'] }
   })
 
+  const escapeXPathString = (string) => {
+    const splitQuotes = string.replace(/'/g, `', "'", '`)
+    return `concat('${splitQuotes}', '')`
+  }
+
   for (let i = 0; i < wednesdayPerishables.length; i++) {
-    const elementHandles = await page.$x(`//tr[td[contains(text(), '${wednesdayPerishables[i].name}')]]`)
-    const secondElementHandle = elementHandles[1]
-    let dataUID = await page.evaluate(() => secondElementHandle.getAttribute('data-uid'))
-    wednesdayPerishables[i].dataId = dataUID
+    const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(wednesdayPerishables[i].name)})]]`)
+    wednesdayPerishables[i].elementHandle = elementHandles[1]
   }
 
   console.log(wednesdayPerishables)
@@ -67,7 +70,13 @@ async function loginToAdminAccount() {
   //    <td><a>View Product</a></td>
   //  </tr>
 
-  // //tr/td[contains(text() ,'string in quotes')]
+  async function getDataUID(elementHandle) {
+    return await page.evaluate(element => element.getAttribute('data-uid'))
+  }
+
+  async function getIDforArray(array) {
+    const promises = array.map(getDataUID)
+  }
 
   // const elementHandles = await page.$x(`//tr[td[contains(text(), 'Beber Chocolate Almond Milk')]]`)
   const elementHandles = await page.$x(`//tr[td[contains(text(), '${wednesdayPerishables[0].name}')]]`)
