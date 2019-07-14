@@ -60,58 +60,19 @@ async function loginToAdminAccount() {
     wednesdayPerishables[i].dataUID = dataUID
   }
 
-  //  FORMAT OF EACH PRODUCT <tr>: 
-
-  //  <tr class="k-alt" data-uid="someString" role="row">
-  //    <td>$Price</td>
-  //    <td>Blank Cell</td>
-  //    <td>Inventory #</td>
-  //    <td><img src="mystery-checkmark.gif" /></td>
-  //    <td>To Sell #</td>
-  //    <td><a>Sold</a></td>
-  //    <td>Remaining To Sell</td>
-  //    <td><a>View Product</a></td>
-  //  </tr>
-
   // iterates over element handles, and finds the corresponding, separate <tr> that has the sales numbers:
   for (let i = 0; i < wednesdayPerishables.length; i++) {
-    console.log(wednesdayPerishables[i].name + ': ' + wednesdayPerishables[i].dataUID)
-
     let otherElementHandles = await page.$x(`//tr[@data-uid="${wednesdayPerishables[i].dataUID}"]`)
-    console.log(otherElementHandles.length)
 
-    // let inventoryNumberHandle = await otherElementHandles[0].$x(`/td`)
+    let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map(node => node.innerText))
 
-    let innerText = await otherElementHandles[0].getProperty('innerText')
-    let innerJSON = await innerText.jsonValue()
-    console.log(innerText)
-
-
-    // console.log(inventoryNumber)
-
-    // let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), otherElementHandles[1])
+    wednesdayPerishables[i].inventory = parseInt(innerText[5])
+    wednesdayPerishables[i].toSell = parseInt(innerText[7])
+    wednesdayPerishables[i].sold = parseInt(innerText[8])
+    wednesdayPerishables[i].remainingToSell = parseInt(innerText[9])
   }
 
-  // async function getDataUID(product) {
-  //   return await page.evaluate((product) => {
-  //     product.dataUID = product.elementHandle.getAttribute('data-uid')
-  //   }, product)
-  // }
-
-  // async function getIDforArray(array) {
-  //   const promises = array.map(getDataUID)
-  // }
-
-  // const promises = wednesdayPerishables.map(getDataUID)
-  // await Promise.all(promises)
-
-  const elementHandles = await page.$x(`//tr[td[contains(text(), '${wednesdayPerishables[0].name}')]]`)
-  const roleHandle = await elementHandles[1].getProperty('outerHTML')
-  const roleJSON = await roleHandle.jsonValue()
-  // console.log(roleJSON)
-
-  let role = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])
-  // console.log(role)
+  console.log(wednesdayPerishables)
 
   // await page.screenshot({ path: './screenshots/' + new Date().getTime() + '.png' })
   browser.close()
