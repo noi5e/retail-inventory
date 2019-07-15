@@ -3,7 +3,6 @@ require('dotenv').config()
 const csvParse = require('csv-parser')
 const fs = require('fs')
 const puppeteer = require('puppeteer')
-const util = require('util')
 
 async function loginToAdminAccount() {
   const browser = await puppeteer.launch()
@@ -41,6 +40,7 @@ async function loginToAdminAccount() {
 
 
 
+  console.log('Scraping data from website...')
   let retailProductIDList = []
 
   for (let i = 0; i < completedRetailProducts.length; i++) {
@@ -53,65 +53,57 @@ async function loginToAdminAccount() {
     return `concat('${splitQuotes}', '')`
   }
 
-  for (let i = 0; i < retailProductIDList.length; i++) {
-    try {
-      // const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(retailProductIDList[i].name)})]]`)
-      const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(retailProductIDList[i].name)}]`)
-      retailProductIDList[i].elementHandle = elementHandles[1]
-      let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])  
-      retailProductIDList[i].dataUID = dataUID
-    } catch(error) {
-      console.error('Error with this product: ' + retailProductIDList[i].name)
-    }
-  }
-
+  // regex function gets ID # that's embedded in <a> tag's href
   const retrieveIDfromString = (string) => {
     return parseInt(string.match(/\d+/)[0])
   }
 
   for (let i = 0; i < retailProductIDList.length; i++) {
-
     try {
-      let otherElementHandles = await page.$x(`//tr[@data-uid="${retailProductIDList[i].dataUID}"]`)
+      // finds the <tr> parent with <td> child with inner text that matches the product name EXACTLY
+      const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(retailProductIDList[i].name)}]`)
+      // saves the resulting element handle
+      retailProductIDList[i].elementHandle = elementHandles[1]
+      // gets and saves the data-uid attribute from the tag: <tr data-uid="someString">
+      let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])  
+      retailProductIDList[i].dataUID = dataUID
+
+      // finds the corresponding, other <tr> tag with the same data-uid attribute.
+      let otherElementHandles = await page.$x(`//tr[@data-uid="${dataUID}"]`)
       let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
 
-      if (!innerText[10]) {
-        let innerText = await otherElementHandles[1].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
+      // this <tr> tag should have an <a> child with the product ID in its href: <a href="/Admin/Product/Edit/3107">
+      // if (!innerText[10]) {
+      //   let innerText = await otherElementHandles[1].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
 
-        retailProductIDList[i].id = retrieveIDfromString(innerText[7])
-
-        console.log(retailProductIDList[i].name)
-      } else {
-        retailProductIDList[i].id = retrieveIDfromString(innerText[10]
-        )      }
+      //   retailProductIDList[i].id = retrieveIDfromString(innerText[7])
+      // } else {
+        retailProductIDList[i].id = retrieveIDfromString(innerText[10])      
+      // }
     } catch(error) {
-      console.error('Error with this product: ' + retailProductIDList[i].name)
+      console.error('Error with ' + retailProductIDList[i].name + ': ' + error)
     }
   }
 
-  let ids = []
 
-  // these products get overwritten:
-  // Book: Full Moon Feast
-  // By Nieves "C" Perfect Skin Large 8 oz refill
-  // By Nieves Face Fix Travel Size
-  // Miss Bee Haven Beeswax Wrap with Button
-  // Rosita Extra-Virgin Cod Liver Oil Capsules
-  // Yume Boshi Umeboshi Salty Pickles 4.5 oz
 
-  for (let i = 0; i < retailProductIDList.length; i++) {
-    // if (!retailProductIDList[i].id) {
-    //   console.log(retailProductIDList[i].name + ': ' + retailProductIDList[i].id)
-    // }
+  // for (let i = 0; i < retailProductIDList.length; i++) {
 
-    if (ids.indexOf(retailProductIDList[i].id) > -1) {
-      console.log(retailProductIDList[i].name)
-    }
+  //   try {
+  //     let otherElementHandles = await page.$x(`//tr[@data-uid="${retailProductIDList[i].dataUID}"]`)
+  //     let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
 
-    ids.push(retailProductIDList[i].id)
+  //     if (!innerText[10]) {
+  //       let innerText = await otherElementHandles[1].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
 
-    console.log(retailProductIDList[i].name + ': ' + retailProductIDList[i].id)
-  }
+  //       retailProductIDList[i].id = retrieveIDfromString(innerText[7])
+  //     } else {
+  //       retailProductIDList[i].id = retrieveIDfromString(innerText[10])      
+  //     }
+  //   } catch(error) {
+  //     console.error('Error with this product: ' + retailProductIDList[i].name)
+  //   }
+  // }
 
 
 
@@ -132,7 +124,7 @@ async function loginToAdminAccount() {
 
   // // iterates over the names of Wednesday perishables, finds the <tr> tags that contain them via XPath, and saves the element handles:
   // for (let i = 0; i < wednesdayPerishables.length; i++) {
-  //   const elementHandles = await page.$x(`//tr[td[contains(text(), ${escapeXPathString(wednesdayPerishables[i].name)})]]`)
+    // const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(wednesdayPerishables[i].name)}]`)
   //   wednesdayPerishables[i].elementHandle = elementHandles[1]
 
   //   let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])
