@@ -4,7 +4,56 @@ const csvParse = require('csv-parser')
 const fs = require('fs')
 const puppeteer = require('puppeteer')
 
-async function loginToAdminAccount() {
+// helper function to escape product names that have single quotes in their names:
+const escapeXPathString = (string) => {
+  const splitQuotes = string.replace(/'/g, `', "'", '`)
+  return `concat('${splitQuotes}', '')`
+}
+
+// regex function gets ID # that's embedded in <a> tag's href
+const retrieveIDfromString = (string) => {
+  return parseInt(string.match(/\d+/)[0])
+}
+
+// function takes an array of products from CSV, scrapes the ID #'s from NOP, and writes the results to CSV:
+async function scrapeIdNumbers(page, completedRetailProducts) {
+  let retailProductIDList = []
+
+  for (let i = 0; i < completedRetailProducts.length; i++) {
+    retailProductIDList.push({ name: completedRetailProducts[i]['Exact Name: NOP'] })
+  }
+
+  const writeStream = fs.createWriteStream('./csv/idList.csv')
+
+  for (let i = 0; i < retailProductIDList.length; i++) {
+    try {
+      // finds the <tr> parent with <td> child with inner text that matches the product name EXACTLY, saves resulting element handle
+      const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(retailProductIDList[i].name)}]`)
+      retailProductIDList[i].elementHandle = elementHandles[1]
+
+      // gets and saves the data-uid attribute from the tag: <tr data-uid="someString">
+      let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])  
+      retailProductIDList[i].dataUID = dataUID
+
+      // finds the corresponding, other <tr> tag with the same data-uid attribute.
+      let otherElementHandles = await page.$x(`//tr[@data-uid="${dataUID}"]`)
+      let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
+
+      // this <tr> tag should have an <a> child with the product ID in its href: <a href="/Admin/Product/Edit/3107">
+      retailProductIDList[i].id = retrieveIDfromString(innerText[10])
+
+      // write to CSV
+      writeStream.write("\"" + retailProductIDList[i].name + "\"" + ',' + retrieveIDfromString(innerText[10]) + '\n')
+    } catch(error) {
+      console.error('Error with ' + retailProductIDList[i].name + ': ' + error)
+    }
+  }
+
+  writeStream.end()
+}
+
+// regular, weekly function to scrape inventory, to sell, and sold #'s from NOP's weekly menu:
+async function getWednesdayPerishableNumbers() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
 
@@ -37,116 +86,49 @@ async function loginToAdminAccount() {
 
   let completedRetailProducts = await fullyParsedStream
 
+  console.log('Scraping inventory numbers...')
 
+  // filters out Wednesday perishables from the list of retail products:
+  let wednesdayPerishables = completedRetailProducts.filter((product) => {
+    return product['Weekly Recurring Order'] === "TRUE";
+  }).map((product) => {
+    return { name: product['Exact Name: NOP'] }
+  })
 
+  // iterates over the names of Wednesday perishables, finds the <tr> tags that contain them via XPath, and saves the element handles:
+  for (let i = 0; i < wednesdayPerishables.length; i++) {
 
-  console.log('Scraping data from website...')
-  let retailProductIDList = []
-
-  for (let i = 0; i < completedRetailProducts.length; i++) {
-    retailProductIDList.push({ name: completedRetailProducts[i]['Exact Name: NOP'] })
-  }
-
-  // helper function to escape product names that have single quotes in their names:
-  const escapeXPathString = (string) => {
-    const splitQuotes = string.replace(/'/g, `', "'", '`)
-    return `concat('${splitQuotes}', '')`
-  }
-
-  // regex function gets ID # that's embedded in <a> tag's href
-  const retrieveIDfromString = (string) => {
-    return parseInt(string.match(/\d+/)[0])
-  }
-
-  for (let i = 0; i < retailProductIDList.length; i++) {
     try {
-      // finds the <tr> parent with <td> child with inner text that matches the product name EXACTLY
-      const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(retailProductIDList[i].name)}]`)
-      // saves the resulting element handle
-      retailProductIDList[i].elementHandle = elementHandles[1]
+
+      // finds the <tr> parent with <td> child with inner text that matches the product name EXACTLY, saves resulting element handle
+      const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(wednesdayPerishables[i].name)}]`)
+
       // gets and saves the data-uid attribute from the tag: <tr data-uid="someString">
       let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])  
-      retailProductIDList[i].dataUID = dataUID
 
       // finds the corresponding, other <tr> tag with the same data-uid attribute.
       let otherElementHandles = await page.$x(`//tr[@data-uid="${dataUID}"]`)
-      let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
+      let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerText))
 
-      // this <tr> tag should have an <a> child with the product ID in its href: <a href="/Admin/Product/Edit/3107">
-      // if (!innerText[10]) {
-      //   let innerText = await otherElementHandles[1].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
+      wednesdayPerishables[i].inventory = parseInt(innerText[5])
+      wednesdayPerishables[i].toSell = parseInt(innerText[7])
+      wednesdayPerishables[i].sold = parseInt(innerText[8])
+      wednesdayPerishables[i].remainingToSell = parseInt(innerText[9])
 
-      //   retailProductIDList[i].id = retrieveIDfromString(innerText[7])
-      // } else {
-        retailProductIDList[i].id = retrieveIDfromString(innerText[10])      
-      // }
     } catch(error) {
-      console.error('Error with ' + retailProductIDList[i].name + ': ' + error)
+
+      console.error('Error with ' + wednesdayPerishables[i].name + ': ' + error)
+
     }
   }
 
+  console.log(wednesdayPerishables)
 
-
-  // for (let i = 0; i < retailProductIDList.length; i++) {
-
-  //   try {
-  //     let otherElementHandles = await page.$x(`//tr[@data-uid="${retailProductIDList[i].dataUID}"]`)
-  //     let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
-
-  //     if (!innerText[10]) {
-  //       let innerText = await otherElementHandles[1].$$eval('td', nodes => nodes.map((node) => node.innerHTML))
-
-  //       retailProductIDList[i].id = retrieveIDfromString(innerText[7])
-  //     } else {
-  //       retailProductIDList[i].id = retrieveIDfromString(innerText[10])      
-  //     }
-  //   } catch(error) {
-  //     console.error('Error with this product: ' + retailProductIDList[i].name)
-  //   }
-  // }
-
-
-
-
-
-  // // iterates over CSV of retail products, to filter out only Wednesday perishables:
-  // let wednesdayPerishables = completedRetailProducts.filter((product) => {
-  //   return product['Weekly Recurring Order'] === "TRUE";
-  // }).map((product) => {
-  //   return { name: product['Exact Name: NOP'] }
-  // })
-
-  // // helper function to escape product names that have single quotes in their names:
-  // const escapeXPathString = (string) => {
-  //   const splitQuotes = string.replace(/'/g, `', "'", '`)
-  //   return `concat('${splitQuotes}', '')`
-  // }
-
-  // // iterates over the names of Wednesday perishables, finds the <tr> tags that contain them via XPath, and saves the element handles:
-  // for (let i = 0; i < wednesdayPerishables.length; i++) {
-    // const elementHandles = await page.$x(`//tr[td/text()=${escapeXPathString(wednesdayPerishables[i].name)}]`)
-  //   wednesdayPerishables[i].elementHandle = elementHandles[1]
-
-  //   let dataUID = await page.evaluate(element => element.getAttribute('data-uid'), elementHandles[1])
-  //   wednesdayPerishables[i].dataUID = dataUID
-  // }
-
-  // // iterates over element handles, and finds the corresponding, separate <tr> that has the sales numbers:
-  // for (let i = 0; i < wednesdayPerishables.length; i++) {
-  //   let otherElementHandles = await page.$x(`//tr[@data-uid="${wednesdayPerishables[i].dataUID}"]`)
-
-  //   let innerText = await otherElementHandles[0].$$eval('td', nodes => nodes.map(node => node.innerText))
-
-  //   wednesdayPerishables[i].inventory = parseInt(innerText[5])
-  //   wednesdayPerishables[i].toSell = parseInt(innerText[7])
-  //   wednesdayPerishables[i].sold = parseInt(innerText[8])
-  //   wednesdayPerishables[i].remainingToSell = parseInt(innerText[9])
-  // }
-
-  // console.log(wednesdayPerishables)
+  let selectedMenu = await page.$eval('#menu-label', element => element.innerText)
+  console.log(selectedMenu)
 
   // await page.screenshot({ path: './screenshots/' + new Date().getTime() + '.png' })
   browser.close()
 }
 
-loginToAdminAccount()
+getWednesdayPerishableNumbers()
