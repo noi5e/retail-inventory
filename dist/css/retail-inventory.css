@@ -1,0 +1,20 @@
+body {
+  background-color: #888;
+}
+
+h1, h2 {
+  text-shadow: 2px 2px 4px #222;
+  color: yellow;
+  text-align: center;
+  margin-top: 15px;
+  margin-bottom: 30px;
+}
+
+h1 {
+  font-size: 6em;
+  font-family: 'Pacifico', cursive;
+}
+
+h2 {
+  font-size: 4em;
+}

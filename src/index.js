@@ -2,7 +2,9 @@ import React from 'react'
 import ReactDOM from 'react-dom'
 
 const App = () => {
-  return <div>Hello React, Webpack 4 & Babel 7!</div>
+  return <div>
+  		 	<h1>Retail Inventory App</h1>
+  		 </div>
 }
 
 ReactDOM.render(<App />, document.querySelector("#root"))
