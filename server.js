@@ -1,7 +1,12 @@
 require('dotenv').config()
 
+const express = require('express')
+const app = express()
+const http = require('http').Server(app)
+
 const csvParse = require('csv-parser')
 const fs = require('fs')
+const path = require('path')
 const puppeteer = require('puppeteer')
 
 // helper function to escape product names that have single quotes in their names:
@@ -131,4 +136,15 @@ async function getWednesdayPerishableNumbers() {
   browser.close()
 }
 
-getWednesdayPerishableNumbers()
+// static files
+app.use(express.static('./dist'))
+
+app.get('/*', function(request, response, next) {
+  response.sendFile(path.join(__dirname + '/dist.index.html'))
+})
+
+const port = process.env.PORT || 8080
+
+http.listen(port, function() {
+  console.log('App listening on port ' + port + '!')
+})
