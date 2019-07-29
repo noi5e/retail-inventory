@@ -4,17 +4,24 @@ body {
 
 h1, h2 {
   text-shadow: 2px 2px 4px #222;
-  color: yellow;
   text-align: center;
-  margin-top: 15px;
-  margin-bottom: 30px;
+  margin-top: 0px;
+  margin-bottom: 0px;
+  user-select: none; /* supported by Chrome and Opera */
+  -webkit-user-select: none; /* Safari */
+  -khtml-user-select: none; /* Konqueror HTML */
+  -moz-user-select: none; /* Firefox */
+  -ms-user-select: none; /* Internet Explorer/Edge */
 }
 
 h1 {
   font-size: 6em;
-  font-family: 'Pacifico', cursive;
+  color: #eeee99;
+  font-family: 'Unica One', cursive;
 }
 
 h2 {
   font-size: 4em;
+  color: #ffffbb;
+  font-family: 'Marck Script', cursive;
 }
