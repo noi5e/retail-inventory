@@ -20,7 +20,7 @@ const retrieveIDfromString = (string) => {
   return parseInt(string.match(/\d+/)[0])
 }
 
-// function takes an array of products from CSV, scrapes the ID #'s from NOP, and writes the results to CSV:
+// use this function only  when you need NOP ID's. it takes product names from a CSV, scrapes the ID #'s from NOP, and writes the results to CSV:
 async function scrapeIdNumbers(page, completedRetailProducts) {
   let retailProductIDList = []
 
@@ -57,7 +57,7 @@ async function scrapeIdNumbers(page, completedRetailProducts) {
   writeStream.end()
 }
 
-// regular, weekly function to scrape inventory, to sell, and sold #'s from NOP's weekly menu:
+// function to get the following #'s from NOP every wednesday: inventory, to sell, and sold:
 async function getWednesdayPerishableNumbers() {
   const browser = await puppeteer.launch()
   const page = await browser.newPage()
