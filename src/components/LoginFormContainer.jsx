@@ -3,11 +3,11 @@ import React from 'react'
 import LoginForm from './LoginForm.jsx'
 
 class LoginFormContainer extends React.Component {
-  render() {
+  render () {
     return (
       <LoginForm />
-    );
+    )
   }
 }
 
-export default LoginFormContainer;
+export default LoginFormContainer
