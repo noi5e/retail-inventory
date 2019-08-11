@@ -1,5 +1,6 @@
 .DS_Store
 .env
+.eslintrc.js
 dist/js/bundle.js
 csv
 data
