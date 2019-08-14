@@ -9,6 +9,8 @@ const http = require('http').Server(app)
 const path = require('path')
 // const puppeteer = require('puppeteer')
 
+const passport = require('passport')
+
 // helper function to escape product names that have single quotes in their names:
 // const escapeXPathString = (string) => {
 //   const splitQuotes = string.replace(/'/g, `', "'", '`)
