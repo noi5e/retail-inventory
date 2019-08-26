@@ -9,6 +9,7 @@ const http = require('http').Server(app)
 const path = require('path')
 // const puppeteer = require('puppeteer')
 
+// passport.js
 const passport = require('passport')
 
 // helper function to escape product names that have single quotes in their names:
@@ -133,13 +134,24 @@ const passport = require('passport')
 //   browser.close()
 // }
 
+// initialize passport & load passport strategy
+app.use(passport.initialize())
+const localLoginStrategy = require('./server/passport/local-login')
+passport.use('local-login', localLoginStrategy)
+
+// routing
+const auth = require('./server/routes/auth')
+app.use('/auth', auth)
+
 // static files
 app.use(express.static('./dist'))
 
+// serve index.html
 app.get('/*', function (request, response, next) {
   response.sendFile(path.join(path.join(__dirname, '/dist.index.html')))
 })
 
+// start serving app
 const port = process.env.PORT || 8080
 
 http.listen(port, function () {
