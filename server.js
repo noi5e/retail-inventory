@@ -1,16 +1,23 @@
 require('dotenv').config()
 
+// express
 const express = require('express')
 const app = express()
 const http = require('http').Server(app)
+
+// passport.js
+const passport = require('passport')
+
+// mongo & mongoose
+const mongo = require('mongodb').MongoClient
+const mongoose = require('mongoose')
+const mongoUrl = process.env.MONGODB_URL
+mongoose.connect(mongoUrl)
 
 // const csvParse = require('csv-parser')
 // const fs = require('fs')
 const path = require('path')
 // const puppeteer = require('puppeteer')
-
-// passport.js
-const passport = require('passport')
 
 // helper function to escape product names that have single quotes in their names:
 // const escapeXPathString = (string) => {
